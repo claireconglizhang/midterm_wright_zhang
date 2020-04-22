@@ -59,3 +59,46 @@ Conduct some basic data cleaning to make your data file look like the following.
 * Filter for only student groups coded as `"White"` or `"Hispanic/Latino"`. 
 * Select variables related to the number of students in each of the levels (1:4), and not percentages or collapsed levels.
 * Remove any row that has missing data in any of the *n* variables
+
+2. (10 points) Collapse (sum) the n across grades and school for each district within each academic year, student group, and level. At the same time, calulate the number of schools (unique schools listed) for each district. Also move your data to a wider format where the student groups become new columns, filled by the district n. Remove districts that did not report numbers for one or both student groups (i.e., drop missing data from the new columns). Your data frame should look like the below
+
+# Part B: Achievement gaps
+### 30 points
+
+If you have not already done so, please install the {gapr} package using the following code
+```{r}
+# remotes::install_github("datalorax/gapr")
+```
+
+The {gapr} package includes, at the moment, one function, estimate_v, which estimates the average difference between two distributions in terms of an effect size when the only data available are counts within bins (for more information, see Ho & Reardon, 2012). The nice thing about this approach is that we’re able to obtain the effect size of average differences in achievement between two groups of students as if we had the full, student level data even though we just have counts within bins (performance levels).
+
+The estimate_v function takes 3 arguments in the following order: (1) the data frame including the counts for each group, (2) a character string stating the name of the column with the counts for the reference group, and (3) a character string stating the name of the column with the counts for the focal group.
+
+To estimate the average achievement difference between students coded Hispanic/Latino versus White for the first school district in the first year in our data, we would run the following
+
+```{r}
+library(gapr)
+d[1:4, ] %>% # data source - just first four rows for first district
+  estimate_v("white", "hispanic_latino") # columns for reference/focal groups
+```
+
+We can see that students coded Hispanic/Latino score, on average, about 0.81 standard deviations below students coded White within this school district.
+
+(10 points) Estimate an achievement gap effect size for every school district in the state that reported data on both student groups (i.e., using the data we created above), for each academic year. Note, on my computer this took about 38 seconds. It will likely take a bit longer for you, but shouldn’t take too long. You may get a warning. Just go ahead and ignore that for now.
+
+(10 points) The plot below shows the achievement gap estimate for one school district across years. Produce a similar plot to the below for each of the first 100 school districts. Make sure you don’t miss the caption noting the number of schools in the district.
+
+Hint: You need to select unique districts. You may want to try something like the following
+
+```{r}
+dists <- unique(v$district)[1:100]
+
+model_list_object %>% 
+  filter(district %in% dists)
+```
+
+3. (10 points) Save the plots into a “plots” directory. Make sure the file names are meaningful.
+
+HINTS:
+You don’t have to use a loop to create the file names (maybe give {glue} a try? Otherwise paste or paste0 will work fine).
+When working with the code, limit the number of plots you’re saving to, say, the first five to make sure it works before running it on all plots.
