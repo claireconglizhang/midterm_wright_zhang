@@ -50,8 +50,8 @@ download_file <- function(year) {
 
 1. (10 points) Use the function above to download all the data for each of the past 4 school years and bind it into a single data frame, using a single function (i.e., one line of code). Note, this may take a minute or two to run, depending on your Internet speed.
 
-```{r}
-ode <- map_df(15:18, download_file) 
+```{r, include=FALSE}
+d <- map_df(15:18, download_file) 
 ```
 
 Conduct some basic data cleaning to make your data file look like the following. 
@@ -60,15 +60,32 @@ Conduct some basic data cleaning to make your data file look like the following.
 * Select variables related to the number of students in each of the levels (1:4), and not percentages or collapsed levels.
 * Remove any row that has missing data in any of the *n* variables
 
+```{r data cleaning, include=TRUE}
+d <- d %>% 
+  janitor::clean_names() %>% 
+  select(academic_year, district, school, student_group, grade_level, number_level_1, number_level_2, number_level_3, number_level_4) %>% 
+  filter(student_group == "White" |
+         student_group == "Hispanic/Latino") %>% 
+  filter(!is.na(number_level_1)) %>% 
+  filter(!is.na(number_level_2)) %>% 
+  filter(!is.na(number_level_3)) %>% 
+  filter(!is.na(number_level_4)) %>% 
+  pivot_longer(
+    c(6:9),
+    names_to = "level",
+    names_prefix = "number_level_",
+    values_to = "n"
+  )
+
+head(d)
+```
+
 2. (10 points) Collapse (sum) the n across grades and school for each district within each academic year, student group, and level. At the same time, calulate the number of schools (unique schools listed) for each district. Also move your data to a wider format where the student groups become new columns, filled by the district n. Remove districts that did not report numbers for one or both student groups (i.e., drop missing data from the new columns). Your data frame should look like the below
 
 # Part B: Achievement gaps
 ### 30 points
 
 If you have not already done so, please install the {gapr} package using the following code
-```{r}
-# remotes::install_github("datalorax/gapr")
-```
 
 The {gapr} package includes, at the moment, one function, estimate_v, which estimates the average difference between two distributions in terms of an effect size when the only data available are counts within bins (for more information, see Ho & Reardon, 2012). The nice thing about this approach is that we’re able to obtain the effect size of average differences in achievement between two groups of students as if we had the full, student level data even though we just have counts within bins (performance levels).
 
