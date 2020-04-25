@@ -102,6 +102,7 @@ d <- left_join(n_stu, n_school) %>%
   janitor::clean_names()
 
 head(d)
+#code still on Jim's local - trying to push again back to Claire 
 ```
 
 
