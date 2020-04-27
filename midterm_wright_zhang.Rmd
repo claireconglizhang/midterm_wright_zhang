@@ -172,8 +172,17 @@ model_list_object %>%
   filter(district %in% dists)
 ```
 
-```{r}
+```{r school district plots}
 
+d_year_distr <- d %>%
+  group_by(academic_year, district) %>% 
+	nest() %>%
+	mutate(gap = map(data, ~estimate_v(.x, "white", "hispanic_latino"))) %>% 
+  ggplot(.x, aes(academic_year, gap)) +
+  geom_errorbar(aes(ymin = gap + qnorm(0.025),
+                    ymax = gap + qnorm(0.975)),
+                color = "gray40") +
+  geom_point()
 
 ```
 
