@@ -17,6 +17,7 @@ library(tidyverse)
 library(purrr)
 library(glue)
 library(rio)
+
 ```
 
 # Setup
@@ -132,7 +133,7 @@ d_year_distr <- d %>%
 	nest() %>%
 	mutate(gap = map(data, ~estimate_v(.x, "white", "hispanic_latino")))
 
-v <- d_year_distr %>% 
+v <- d_year_distr %>%
   select(-data) %>% 
   unnest(gap)
 
@@ -152,13 +153,15 @@ for_plot <- v %>%
 ```
 
 ```{r}
+# let's try Bandon district first to get our plot run
+
 plot1 <- for_plot %>% 
   filter(district == "Bandon SD 54") %>% 
   ggplot(aes(academic_year, v)) +
   geom_point() +
   geom_line(aes(x = as.numeric(as.factor(academic_year))),
             color = "gray40") +
-  geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se)) +
+  geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
   geom_hline(yintercept = 0.0,
              color = "red") +
   theme(panel.grid.major.y = element_blank(),
@@ -167,37 +170,68 @@ plot1 <- for_plot %>%
         axis.text=element_text(size=10),
         axis.title=element_text(size=12)) +
   theme_minimal() +
-  labs(title = "Achievement Gap Estimates: Bandon School District",
+  labs(x = "School Year",
+       y = "Average Achievement Difference (SD Unites)",
+       title = "Achievement Gap Estimates: Bandon School District",
        subtitle = "Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement",
        caption = "Note: District includes 3 schools")
  
-
 plot1
-
-
 ```
 
-```{r produce all plots}
+```{r}
+# this could be super long so i decided to try to make the map-through-thing work before we deal with the titles and it managed to work - we probably SHOULDN'T include this into our final or we should let Daniel know that this is just a thinking process instead of a part of the work
 
-all_plots <- for_plot %>% 
-  mutate(plot = map2(v, academic_year, ~
-  ggplot(.x, aes(academic_year, v)))) +
-  geom_point() +
-  geom_line(aes(x = as.numeric(as.factor(academic_year))),
-            color = "gray40") +
-  geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se)) +
-  geom_hline(yintercept = 0.0,
-             color = "red") +
-  theme(panel.grid.major.y = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(color = "gray80"),
-        axis.text=element_text(size=10),
-        axis.title=element_text(size=12)) +
-  theme_minimal() +
-  labs(title = glue("Achievement Gap Estimates: {.y}"),
-       subtitle = glue("Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement"),
-       caption = glue("Note: {.y}"))
+all_plots <- for_plot %>%
+  group_by(district) %>% 
+  nest() %>% 
+  mutate(plot = map(data, ~ggplot(.x, aes(academic_year, v))+
+                      geom_point()+
+                      geom_line(aes(x = as.numeric(as.factor(academic_year))),color = "gray40")+
+                      geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
+                      geom_hline(yintercept = 0.0, color = "red")+
+                      theme(panel.grid.major.y = element_blank(),
+                            panel.grid.minor.x = element_blank(),
+                            panel.grid.major.x = element_line(color = "gray80"),
+                            axis.text=element_text(size=10),
+                            axis.title=element_text(size=12))+
+                      theme_minimal())）
+        
+all_plots$plot[[1]]
+all_plots$plot[[2]]
 ```
+
+```{r}
+# this chunck is trying to do it all, it will be dealing with the titles and map through the data; there should be several ways to do this but i first have to add back the number of schools back b/c we need that number to be changed by district； then, create two labels we want to change accordingly with each plot; then map.
+
+plots <- left_join(for_plot, n_school)%>%
+  mutate(label_1 = glue("Achievement Gap Estimates: {district}"),
+         label_2 = glue("Note: District Includes {str_to_title(n_schools)} Schools")) %>%
+  select(-n_schools) %>% 
+  nest(-district, -label_1, -label_2) %>%
+  mutate(plot = map(data, ~ggplot(.x, aes(academic_year, v))+
+                      geom_point()+
+                      geom_line(aes(x = as.numeric(as.factor(academic_year))),color = "gray40")+
+                      geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
+                      geom_hline(yintercept = 0.0, color = "red")+
+                      theme(panel.grid.major.y = element_blank(),
+                            panel.grid.minor.x = element_blank(),
+                            panel.grid.major.x = element_line(color = "gray80"),
+                            axis.text=element_text(size=10),
+                            axis.title=element_text(size=12))+
+                      theme_minimal()+
+                      labs(x = "School Year",
+                           y = "Average Achievement Difference (SD Unites)",
+                           title = unique(plots$label_1),
+                           subtitle = "Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement",
+                           caption = unique(plots$label_2))))
+
+plots$plot[[7]]
+plots$plot[[5]]
+
+# :...( i thought i did everything right, but the two labels just don't work!!
+```
+
 
 3. (10 points) Save the plots into a “plots” directory. Make sure the file names are meaningful.
 
