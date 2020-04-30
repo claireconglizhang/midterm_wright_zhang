@@ -209,7 +209,8 @@ plots <- left_join(for_plot, n_school)%>%
          label_2 = glue("Note: District Includes {str_to_title(n_schools)} Schools")) %>%
   select(-n_schools) %>% 
   nest(-district, -label_1, -label_2) %>%
-  mutate(plot = map(data, ~ggplot(.x, aes(academic_year, v))+
+  mutate(plot = pmap(list(district, label_1, label_2,data), 
+                     ~ggplot(..4, aes(academic_year, v))+
                       geom_point()+
                       geom_line(aes(x = as.numeric(as.factor(academic_year))),color = "gray40")+
                       geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
@@ -222,14 +223,14 @@ plots <- left_join(for_plot, n_school)%>%
                       theme_minimal()+
                       labs(x = "School Year",
                            y = "Average Achievement Difference (SD Unites)",
-                           title = unique(plots$label_1),
+                           title = ..2,
                            subtitle = "Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement",
-                           caption = unique(plots$label_2))))
+                           caption = ..3)))
 
-plots$plot[[7]]
-plots$plot[[5]]
+plots$plot[[1]]
+plots$plot[[2]]
 
-# :...( i thought i did everything right, but the two labels just don't work!!
+# yeah! looks it worked. so lesson learned - i should use pmap() since my list has four columns to map through
 ```
 
 
@@ -238,5 +239,7 @@ plots$plot[[5]]
 HINTS:
 You don’t have to use a loop to create the file names (maybe give {glue} a try? Otherwise paste or paste0 will work fine).
 When working with the code, limit the number of plots you’re saving to, say, the first five to make sure it works before running it on all plots.
+
+
 =======
 
