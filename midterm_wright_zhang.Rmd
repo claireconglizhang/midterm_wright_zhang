@@ -135,6 +135,7 @@ d_year_distr <- d %>%
 v <- d_year_distr %>% 
   select(-data) %>% 
   unnest(gap)
+
 head(v)
 ```
 
@@ -153,18 +154,50 @@ for_plot <- v %>%
 ```{r}
 plot1 <- for_plot %>% 
   filter(district == "Bandon SD 54") %>% 
-  ggplot(aes(academic_year, v))+
-  geom_errorbar(aes(ymin = v - v_se,
-                    ymax = v + v_se),
-                color = "gray40")+
-  geom_point()+
-  geom_line()
+  ggplot(aes(academic_year, v)) +
+  geom_point() +
+  geom_line(aes(x = as.numeric(as.factor(academic_year))),
+            color = "gray40") +
+  geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se)) +
+  geom_hline(yintercept = 0.0,
+             color = "red") +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(color = "gray80"),
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=12)) +
+  theme_minimal() +
+  labs(title = "Achievement Gap Estimates: Bandon School District",
+       subtitle = "Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement",
+       caption = "Note: District includes 3 schools")
+ 
+
 plot1
 
 
 ```
 
+```{r produce all plots}
 
+all_plots <- for_plot %>% 
+  mutate(plot = map2(v, academic_year, ~
+  ggplot(.x, aes(academic_year, v)))) +
+  geom_point() +
+  geom_line(aes(x = as.numeric(as.factor(academic_year))),
+            color = "gray40") +
+  geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se)) +
+  geom_hline(yintercept = 0.0,
+             color = "red") +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(color = "gray80"),
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=12)) +
+  theme_minimal() +
+  labs(title = glue("Achievement Gap Estimates: {.y}"),
+       subtitle = glue("Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement"),
+       caption = glue("Note: {.y}"))
+```
 
 3. (10 points) Save the plots into a “plots” directory. Make sure the file names are meaningful.
 
