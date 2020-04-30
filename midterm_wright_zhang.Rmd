@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 ---
 title: "Midterm: Take-home"
 author: Jim Wright, Claire Zhang 
@@ -152,7 +151,7 @@ for_plot <- v %>%
   filter(district %in% dists)
 ```
 
-```{r}
+```{r one plot}
 # let's try Bandon district first to get our plot run
 
 plot1 <- for_plot %>% 
@@ -179,58 +178,33 @@ plot1 <- for_plot %>%
 plot1
 ```
 
-```{r}
-# this could be super long so i decided to try to make the map-through-thing work before we deal with the titles and it managed to work - we probably SHOULDN'T include this into our final or we should let Daniel know that this is just a thinking process instead of a part of the work
-
-all_plots <- for_plot %>%
-  group_by(district) %>% 
-  nest() %>% 
-  mutate(plot = map(data, ~ggplot(.x, aes(academic_year, v))+
-                      geom_point()+
-                      geom_line(aes(x = as.numeric(as.factor(academic_year))),color = "gray40")+
-                      geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
-                      geom_hline(yintercept = 0.0, color = "red")+
-                      theme(panel.grid.major.y = element_blank(),
-                            panel.grid.minor.x = element_blank(),
-                            panel.grid.major.x = element_line(color = "gray80"),
-                            axis.text=element_text(size=10),
-                            axis.title=element_text(size=12))+
-                      theme_minimal())）
-        
-all_plots$plot[[1]]
-all_plots$plot[[2]]
-```
-
-```{r}
-# this chunck is trying to do it all, it will be dealing with the titles and map through the data; there should be several ways to do this but i first have to add back the number of schools back b/c we need that number to be changed by district； then, create two labels we want to change accordingly with each plot; then map.
-
-plots <- left_join(for_plot, n_school)%>%
+```{r all plots}
+plots <- left_join(for_plot, n_school) %>%
   mutate(label_1 = glue("Achievement Gap Estimates: {district}"),
          label_2 = glue("Note: District Includes {str_to_title(n_schools)} Schools")) %>%
   select(-n_schools) %>% 
   nest(-district, -label_1, -label_2) %>%
-  mutate(plot = pmap(list(district, label_1, label_2,data), 
+  mutate(plot = pmap(list(district, label_1, label_2, data), 
                      ~ggplot(..4, aes(academic_year, v))+
                       geom_point()+
                       geom_line(aes(x = as.numeric(as.factor(academic_year))),color = "gray40")+
                       geom_errorbar(aes(ymin = v - v_se, ymax = v + v_se), width = 0.2, color = "grey70") +
-                      geom_hline(yintercept = 0.0, color = "red")+
+                      geom_hline(yintercept = 0.0, color = "red") +
                       theme(panel.grid.major.y = element_blank(),
                             panel.grid.minor.x = element_blank(),
                             panel.grid.major.x = element_line(color = "gray80"),
                             axis.text=element_text(size=10),
-                            axis.title=element_text(size=12))+
-                      theme_minimal()+
+                            axis.title=element_text(size=12)) +
+                      theme_minimal() +
                       labs(x = "School Year",
-                           y = "Average Achievement Difference (SD Unites)",
+                           y = "Average Achievement Difference (SD Units)",
                            title = ..2,
                            subtitle = "Negative values indicate White students have higher average achievement\nPositive values indicate Hispanic/Latino students have higher average achievement",
                            caption = ..3)))
 
 plots$plot[[1]]
 plots$plot[[2]]
-
-# yeah! looks it worked. so lesson learned - i should use pmap() since my list has four columns to map through
+plots$plot[[15]]
 ```
 
 
@@ -240,6 +214,17 @@ HINTS:
 You don’t have to use a loop to create the file names (maybe give {glue} a try? Otherwise paste or paste0 will work fine).
 When working with the code, limit the number of plots you’re saving to, say, the first five to make sure it works before running it on all plots.
 
+```{r save plots}
+fs::dir_create(here::here("plots", "districts"))
 
-=======
+files <- str_replace_all(tolower(plots$district), " ", "-")
+paths <- here::here("plots", "districts", glue("{files}.png"))
+paths
+
+walk2(paths, plots$plot, ggsave,
+      width = 9.5, 
+      height = 6.5,
+      dpi = 500)
+
+```
 
